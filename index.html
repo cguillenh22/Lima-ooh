@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>Lima OOH Intelligence</title>
+<link href="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.css" rel="stylesheet">
+<script src="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden;font-family:'Courier New',monospace;background:#07070e;color:#ccd}
+#root{display:flex;flex-direction:column;height:100vh}
+#hdr{background:#0c0c1a;border-bottom:1px solid #1a1a30;padding:0 14px;height:48px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;z-index:1000}
+.hex{width:30px;height:30px;background:#00e5ff;clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:700;color:#000;flex-shrink:0}
+.t1{font-size:13px;font-weight:700;color:#fff}.t2{font-size:7px;color:#334;letter-spacing:2px}
+.hbtns{display:flex;gap:5px}
+.btn{padding:5px 10px;border-radius:3px;font-size:8px;cursor:pointer;font-family:inherit;font-weight:700;border:none}
+.bc{background:transparent;border:1px solid #00e5ff!important;color:#00e5ff}
+.bg{background:transparent;border:1px solid #2c8!important;color:#2c8}
+.ba{background:#00e5ff;color:#000}.bx{background:#ff6b35;color:#fff}
+#body{display:flex;flex:1;overflow:hidden}
+#sb{width:260px;background:#0c0c1a;border-right:1px solid #1a1a30;display:flex;flex-direction:column;flex-shrink:0;z-index:999}
+.tabs{display:flex;border-bottom:1px solid #1a1a30}
+.tab{flex:1;padding:9px 3px;text-align:center;font-size:7px;letter-spacing:1px;cursor:pointer;color:#334;border-bottom:2px solid transparent;transition:all .2s;text-transform:uppercase}
+.tab.on{color:#00e5ff;border-bottom-color:#00e5ff}
+#sbody{flex:1;overflow-y:auto;padding:11px}
+#sbody::-webkit-scrollbar{width:3px}
+#sbody::-webkit-scrollbar-thumb{background:#1e1e30;border-radius:2px}
+.sec{font-size:7px;letter-spacing:2px;color:#445;margin:12px 0 7px;text-transform:uppercase}.sec:first-child{margin-top:0}
+.lr{display:flex;align-items:center;gap:8px;padding:6px 7px;border-radius:4px;margin-bottom:2px;cursor:pointer;transition:background .15s}
+.lr:hover,.lr.on{background:#0e0e1e}
+.ld{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.lt{flex:1}.ln{font-size:9px;font-weight:700;color:#446}.lr.on .ln{color:#dde}
+.ls{font-size:7px;color:#334;margin-top:1px}
+.tog{width:26px;height:14px;border-radius:7px;background:#1e1e30;position:relative;flex-shrink:0;transition:background .2s}
+.tog.on{background:#00e5ff}
+.tog::after{content:"";position:absolute;top:2px;left:2px;width:10px;height:10px;border-radius:50%;background:white;transition:left .2s}
+.tog.on::after{left:14px}
+.ngrid{display:grid;grid-template-columns:1fr 1fr;gap:3px;margin-bottom:10px}
+.nc{padding:5px 4px;border-radius:3px;font-size:8px;font-weight:700;text-align:center;cursor:pointer;border:1px solid;transition:opacity .2s;user-select:none}
+.nc.off{opacity:.25}
+.fg{margin-bottom:7px}.fl{font-size:7px;color:#445;margin-bottom:3px;display:block;text-transform:uppercase;letter-spacing:1px}
+.fi{width:100%;background:#0e0e1e;border:1px solid #1e1e32;color:#dde;padding:5px 7px;border-radius:3px;font-size:10px;font-family:inherit}
+.fi:focus{outline:none;border-color:#00e5ff}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.fsave{width:100%;padding:8px;background:#00e5ff;color:#000;border:none;border-radius:3px;font-size:9px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:5px}
+.hint{font-size:7px;color:#445;text-align:center;margin-bottom:10px}
+.oi{display:flex;justify-content:space-between;align-items:center;padding:5px 7px;background:#0e0e1e;border-radius:3px;margin-bottom:2px;cursor:pointer;border-left:2px solid;transition:background .15s}
+.oi:hover,.oi.sel{background:#141430}
+.on2{font-size:9px;font-weight:700;color:#dde}.om{font-size:7px;color:#445;margin-top:1px}.osc{font-weight:800;font-size:12px;flex-shrink:0}
+.sgrid{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:12px}
+.sc{background:#0e0e1e;border:1px solid #1e1e30;border-radius:5px;padding:9px 6px;text-align:center}
+.sv{font-size:19px;font-weight:800;color:#00e5ff}.sl{font-size:6px;color:#334;letter-spacing:1px;margin-top:2px}
+.rc{background:#0e0e1e;border:1px solid #1e1e30;border-radius:4px;padding:9px;margin-bottom:5px;border-left:3px solid}
+.sbr{display:flex;align-items:center;gap:5px;margin-bottom:3px}
+.sbl{font-size:7px;color:#445;width:60px;flex-shrink:0}
+.sbt{flex:1;height:3px;background:#1a1a30;border-radius:2px;overflow:hidden}
+.sbf{height:100%;border-radius:2px;transition:width .4s}
+.sbv{font-size:7px;width:20px;text-align:right;flex-shrink:0}
+.legrow{display:flex;align-items:center;gap:6px;margin-bottom:4px}
+.legsq{width:11px;height:11px;border-radius:2px;flex-shrink:0}
+#mapwrap{flex:1;position:relative}
+#map{width:100%;height:100%}
+#banner{position:absolute;top:10px;left:50%;transform:translateX(-50%);background:#ff6b35;color:white;padding:6px 16px;border-radius:4px;font-size:9px;font-weight:700;z-index:2000;display:none;pointer-events:none;white-space:nowrap;letter-spacing:1px}
+#loading{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#0c0c1a;border:1px solid #00e5ff;border-radius:8px;padding:20px 30px;z-index:3000;text-align:center;color:#00e5ff;letter-spacing:2px;font-size:10px;line-height:2}
+#loading.hide{display:none}
+.mapboxgl-popup-content{background:#0c0c1a!important;color:#dde!important;border:1px solid #1e1e30!important;border-radius:6px!important;box-shadow:0 4px 24px rgba(0,0,0,.7)!important;min-width:180px;padding:12px 14px!important;font-family:'Courier New',monospace!important;font-size:11px!important}
+.mapboxgl-popup-tip{border-top-color:#1e1e30!important;border-bottom-color:#1e1e30!important}
+.mapboxgl-ctrl-group{background:#0c0c1a!important;border:1px solid #1e1e30!important}
+.mapboxgl-ctrl-group button{background:#0c0c1a!important;color:#00e5ff!important}
+.mapboxgl-ctrl-group button span{filter:invert(1) sepia(1) saturate(5) hue-rotate(160deg)!important}
+.mapboxgl-ctrl-attrib{display:none}
+.ptipo{font-size:8px;font-weight:700;padding:2px 7px;border-radius:2px;display:inline-block;margin-bottom:6px;color:#000}
+.pname{font-size:14px;font-weight:700;margin-bottom:5px;color:#fff}
+.pmeta{font-size:9px;color:#556;margin-bottom:2px}
+.pscore{font-size:28px;font-weight:800;margin-top:8px;line-height:1}
+.pscl{font-size:8px;color:#556;margin-top:2px}
+</style>
+</head>
+<body>
+<div id="root">
+<div id="hdr">
+  <div style="display:flex;align-items:center;gap:9px">
+    <div class="hex">OOH</div>
+    <div><div class="t1">LIMA OOH INTELLIGENCE</div><div class="t2" id="hdrsub">CARGANDO...</div></div>
+  </div>
+  <div class="hbtns">
+    <label class="btn bg">↑ CSV<input type="file" accept=".csv" id="csvIn" style="display:none" onchange="importCSV(this)"></label>
+    <button class="btn bc" onclick="exportCSV()">↓ CSV</button>
+    <button class="btn ba" id="addBtn" onclick="toggleAdd()">+ ELEMENTO</button>
+  </div>
+</div>
+<div id="body">
+  <div id="sb">
+    <div class="tabs">
+      <div class="tab on" onclick="showTab('capas')">Capas</div>
+      <div class="tab" onclick="showTab('elementos')">Elementos</div>
+      <div class="tab" onclick="showTab('analisis')">Análisis</div>
+    </div>
+    <div id="sbody">
+      <div id="p-capas">
+        <div class="sec">Capas del mapa</div>
+        <div class="lr on" id="lr-dist" onclick="togL('dist')"><div class="ld" style="background:#a259ff"></div><div class="lt"><div class="ln">Distritos NSE</div><div class="ls">Polígonos reales INEI</div></div><div class="tog on" id="t-dist"></div></div>
+        <div class="lr on" id="lr-mall" onclick="togL('mall')"><div class="ld" style="background:#00e5ff"></div><div class="lt"><div class="ln">Centros Comerciales</div><div class="ls">12 grandes superficies Lima</div></div><div class="tog on" id="t-mall"></div></div>
+        <div class="lr on" id="lr-traf" onclick="togL('traf')"><div class="ld" style="background:#ffcc00"></div><div class="lt"><div class="ln">Tráfico en tiempo real</div><div class="ls">Mapbox Traffic v1 · datos reales</div></div><div class="tog on" id="t-traf"></div></div>
+        <div class="lr on" id="lr-ooh" onclick="togL('ooh')"><div class="ld" style="background:#00ff88"></div><div class="lt"><div class="ln">Elementos OOH</div><div class="ls" id="oohDesc">20 elementos demo</div></div><div class="tog on" id="t-ooh"></div></div>
+        <div class="sec">Filtrar NSE</div>
+        <div class="ngrid" id="nseGrid"></div>
+        <div class="sec">Leyenda NSE · APEIM 2023</div>
+        <div id="nseLeg"></div>
+        <div class="sec">Score OOH</div>
+        <div class="legrow"><div style="width:8px;height:8px;border-radius:50%;background:#00ff88"></div><span style="font-size:8px;font-weight:700;color:#00ff88">≥70 </span><span style="font-size:8px;color:#556">RECOMENDADO</span></div>
+        <div class="legrow"><div style="width:8px;height:8px;border-radius:50%;background:#ffcc00"></div><span style="font-size:8px;font-weight:700;color:#ffcc00">50–69 </span><span style="font-size:8px;color:#556">EVALUAR</span></div>
+        <div class="legrow"><div style="width:8px;height:8px;border-radius:50%;background:#ff6b35"></div><span style="font-size:8px;font-weight:700;color:#ff6b35">&lt;50 </span><span style="font-size:8px;color:#556">BAJA PRIOR.</span></div>
+        <div class="sec">Tráfico en tiempo real</div>
+        <div class="legrow"><div style="width:20px;height:4px;background:#ff1a1a;border-radius:2px"></div><span style="font-size:8px;color:#778">Severo · parado o casi</span></div>
+        <div class="legrow"><div style="width:20px;height:4px;background:#ff6600;border-radius:2px"></div><span style="font-size:8px;color:#778">Alto · muy lento</span></div>
+        <div class="legrow"><div style="width:20px;height:3px;background:#ffcc00;border-radius:2px"></div><span style="font-size:8px;color:#778">Moderado · flujo reducido</span></div>
+        <div class="legrow"><div style="width:20px;height:2px;background:#00cc44;border-radius:2px"></div><span style="font-size:8px;color:#778">Fluido · circulación normal</span></div>
+        <div style="margin-top:5px;font-size:6px;color:#334;line-height:1.6">Fuente: Mapbox Traffic v1<br>Datos reales por segmento vial<br>Actualización continua · Lima</div>
+      </div>
+      <div id="p-elementos" style="display:none">
+        <div class="sec">Nuevo elemento OOH</div>
+        <div class="fg"><label class="fl">Tipo</label><select class="fi" id="fTipo"><option value="banderola">🚩 Banderola</option><option value="unicolor">🟦 Unicolor</option><option value="minipalrew">📋 Minipalrew</option><option value="panel">🟥 Panel</option><option value="otro">📌 Otro</option></select></div>
+        <div class="fg"><label class="fl">Nombre / Código</label><input class="fi" id="fNom" placeholder="BAN-001"></div>
+        <div class="fg"><label class="fl">Proveedor</label><input class="fi" id="fProv" placeholder="JCDecaux"></div>
+        <div class="fg"><label class="fl">Precio S/./mes</label><input type="number" class="fi" id="fPrecio" placeholder="0" min="0"></div>
+        <div class="frow">
+          <div class="fg"><label class="fl">Ancho (m)</label><input type="number" class="fi" id="fAncho" placeholder="8.0" step="0.1" min="0"></div>
+          <div class="fg"><label class="fl">Alto (m)</label><input type="number" class="fi" id="fAlto" placeholder="3.0" step="0.1" min="0"></div>
+        </div>
+        <div class="frow">
+          <div class="fg"><label class="fl">Caras</label><select class="fi" id="fCaras"><option value="1">1 cara</option><option value="2">2 caras</option></select></div>
+          <div class="fg"><label class="fl">Iluminación</label><select class="fi" id="fIlum"><option value="Sin iluminación">Sin ilum.</option><option value="Frontal">Frontal</option><option value="Backlight">Backlight</option><option value="LED">LED</option></select></div>
+        </div>
+        <div class="fg"><label class="fl">Orientación</label><select class="fi" id="fOri"><option value="Norte">Norte</option><option value="Sur">Sur</option><option value="Este">Este</option><option value="Oeste">Oeste</option><option value="NE">Noreste</option><option value="NO">Noroeste</option><option value="SE">Sureste</option><option value="SO">Suroeste</option></select></div>
+        <div class="frow">
+          <div class="fg"><label class="fl">Latitud</label><input type="number" class="fi" id="fLat" placeholder="-12.0464" step="0.00001"></div>
+          <div class="fg"><label class="fl">Longitud</label><input type="number" class="fi" id="fLng" placeholder="-77.0428" step="0.00001"></div>
+        </div>
+        <button class="fsave" onclick="saveOOH()">GUARDAR ELEMENTO</button>
+        <div class="hint">O activa "+ ELEMENTO" → click en el mapa</div>
+        <div class="sec">Registrados (<span id="oohCnt">0</span>)</div>
+        <div id="oohList"></div>
+      </div>
+      <div id="p-analisis" style="display:none">
+        <div class="sgrid">
+          <div class="sc"><div class="sv" id="sTot">0</div><div class="sl">ELEMENTOS</div></div>
+          <div class="sc"><div class="sv">12</div><div class="sl">C.COMERC.</div></div>
+          <div class="sc"><div class="sv" id="sDist">—</div><div class="sl">DISTRITOS</div></div>
+          <div class="sc"><div class="sv" id="sAvg">—</div><div class="sl">SCORE PROM</div></div>
+        </div>
+        <div class="sec">Top 5 Recomendados</div><div id="top5"></div>
+        <div class="sec">Score Detallado</div><div id="scoreD"></div>
+      </div>
+    </div>
+  </div>
+  <div id="mapwrap">
+    <div id="loading">⏳ CARGANDO MAPA...<br><small style="font-size:8px;color:#445;letter-spacing:1px">Conectando Mapbox GL</small></div>
+    <div id="banner">⊕ CLICK EN EL MAPA PARA POSICIONAR ELEMENTO</div>
+    <div id="map"></div>
+  </div>
+</div>
+</div>
+
+<script>
+// ── CONSTANTS ─────────────────────────────────────────────────────────────
+const MBTOKEN = 'pk.eyJ1IjoiY2d1aWxsZW5oIiwiYSI6ImNtcGlhbTVxMDFhaHMycHBvOWtpMnZwYW4ifQ.p_7mN-4Q_iTZH4_OAT2Mcw';
+const NC={A:"#e74c3c",B1:"#e67e22",B2:"#f1c40f",C1:"#27ae60",C2:"#2ecc71",D:"#3498db",E:"#95a5a6"};
+const NL={A:"Miraflores, San Isidro",B1:"Surco, La Molina, San Borja",B2:"Jesús María, San Miguel, Lince",C1:"Chorrillos, Ate, Los Olivos",C2:"La Victoria, Lima, Rímac",D:"SJL, SMP, Comas, Callao",E:"Ventanilla, Pachacámac"};
+const TI={banderola:"🚩",unicolor:"🟦",minipalrew:"📋",panel:"🟥",otro:"📌"};
+
+// NSE por distrito
+const NSE_MAP={"LIMA":"C2","ANCON":"D","ATE":"C1","BARRANCO":"B1","BREÑA":"C2","CARABAYLLO":"D","CHACLACAYO":"B2","CHORRILLOS":"C1","CIENEGUILLA":"B2","COMAS":"D","EL AGUSTINO":"C2","INDEPENDENCIA":"D","JESUS MARIA":"B2","LA MOLINA":"B1","LA VICTORIA":"C2","LINCE":"B2","LOS OLIVOS":"C1","LURIGANCHO":"C2","LURIN":"D","MAGDALENA DEL MAR":"B2","MIRAFLORES":"A","PACHACAMAC":"E","PUCUSANA":"E","PUEBLO LIBRE":"B2","PUENTE PIEDRA":"D","PUNTA HERMOSA":"B2","PUNTA NEGRA":"B2","RIMAC":"C2","SAN BARTOLO":"C1","SAN BORJA":"B1","SAN ISIDRO":"A","SAN JUAN DE LURIGANCHO":"D","SAN JUAN DE MIRAFLORES":"C2","SAN LUIS":"C1","SAN MARTIN DE PORRES":"D","SAN MIGUEL":"B2","SANTA ANITA":"C1","SANTA MARIA DEL MAR":"A","SANTA ROSA":"D","SANTIAGO DE SURCO":"B1","SURQUILLO":"B2","VILLA EL SALVADOR":"D","VILLA MARIA DEL TRIUNFO":"D","CALLAO":"D","BELLAVISTA":"D","CARMEN DE LA LEGUA REYNOSO":"D","LA PERLA":"D","LA PUNTA":"B2","MI PERU":"E","VENTANILLA":"E"};
+
+var FALLBACK_GEO={"type":"FeatureCollection","features":[{"type":"Feature","properties":{"nombdist":"MIRAFLORES"},"geometry":{"type":"Polygon","coordinates":[[[-77.052,-12.107],[-77.03,-12.107],[-77.024,-12.118],[-77.024,-12.138],[-77.041,-12.145],[-77.054,-12.13],[-77.056,-12.115],[-77.052,-12.107]]]}},{"type":"Feature","properties":{"nombdist":"SAN ISIDRO"},"geometry":{"type":"Polygon","coordinates":[[[-77.058,-12.082],[-77.037,-12.082],[-77.03,-12.095],[-77.03,-12.107],[-77.052,-12.107],[-77.062,-12.095],[-77.058,-12.082]]]}},{"type":"Feature","properties":{"nombdist":"SANTIAGO DE SURCO"},"geometry":{"type":"Polygon","coordinates":[[[-77.056,-12.107],[-77.041,-12.145],[-77.048,-12.155],[-77.024,-12.168],[-77.0,-12.175],[-76.978,-12.155],[-76.99,-12.125],[-77.003,-12.107],[-77.03,-12.107],[-77.052,-12.107],[-77.056,-12.107]]]}},{"type":"Feature","properties":{"nombdist":"LA MOLINA"},"geometry":{"type":"Polygon","coordinates":[[[-77.003,-12.068],[-76.968,-12.068],[-76.942,-12.077],[-76.928,-12.09],[-76.928,-12.107],[-76.944,-12.125],[-76.978,-12.155],[-77.003,-12.155],[-77.003,-12.082],[-77.003,-12.068]]]}},{"type":"Feature","properties":{"nombdist":"SAN BORJA"},"geometry":{"type":"Polygon","coordinates":[[[-77.03,-12.082],[-77.018,-12.082],[-77.003,-12.082],[-76.999,-12.095],[-77.003,-12.107],[-77.018,-12.098],[-77.03,-12.107],[-77.03,-12.082]]]}},{"type":"Feature","properties":{"nombdist":"BARRANCO"},"geometry":{"type":"Polygon","coordinates":[[[-77.041,-12.145],[-77.024,-12.138],[-77.021,-12.15],[-77.024,-12.158],[-77.041,-12.154],[-77.048,-12.148],[-77.041,-12.145]]]}},{"type":"Feature","properties":{"nombdist":"LINCE"},"geometry":{"type":"Polygon","coordinates":[[[-77.05,-12.082],[-77.037,-12.082],[-77.03,-12.095],[-77.037,-12.101],[-77.05,-12.098],[-77.055,-12.09],[-77.05,-12.082]]]}},{"type":"Feature","properties":{"nombdist":"JESUS MARIA"},"geometry":{"type":"Polygon","coordinates":[[[-77.062,-12.068],[-77.05,-12.068],[-77.037,-12.068],[-77.037,-12.082],[-77.05,-12.082],[-77.062,-12.077],[-77.062,-12.068]]]}},{"type":"Feature","properties":{"nombdist":"PUEBLO LIBRE"},"geometry":{"type":"Polygon","coordinates":[[[-77.078,-12.068],[-77.062,-12.068],[-77.062,-12.09],[-77.072,-12.095],[-77.087,-12.09],[-77.087,-12.077],[-77.078,-12.068]]]}},{"type":"Feature","properties":{"nombdist":"MAGDALENA DEL MAR"},"geometry":{"type":"Polygon","coordinates":[[[-77.087,-12.09],[-77.072,-12.095],[-77.062,-12.09],[-77.062,-12.098],[-77.072,-12.103],[-77.087,-12.101],[-77.095,-12.098],[-77.087,-12.09]]]}},{"type":"Feature","properties":{"nombdist":"SAN MIGUEL"},"geometry":{"type":"Polygon","coordinates":[[[-77.095,-12.055],[-77.078,-12.055],[-77.078,-12.068],[-77.087,-12.077],[-77.095,-12.077],[-77.108,-12.068],[-77.108,-12.06],[-77.095,-12.055]]]}},{"type":"Feature","properties":{"nombdist":"SURQUILLO"},"geometry":{"type":"Polygon","coordinates":[[[-77.037,-12.107],[-77.03,-12.107],[-77.018,-12.098],[-77.003,-12.107],[-77.003,-12.115],[-77.018,-12.12],[-77.03,-12.12],[-77.037,-12.115],[-77.037,-12.107]]]}},{"type":"Feature","properties":{"nombdist":"CHORRILLOS"},"geometry":{"type":"Polygon","coordinates":[[[-77.041,-12.154],[-77.024,-12.15],[-77.003,-12.168],[-76.999,-12.193],[-77.018,-12.21],[-77.041,-12.193],[-77.054,-12.176],[-77.041,-12.154]]]}},{"type":"Feature","properties":{"nombdist":"ATE"},"geometry":{"type":"Polygon","coordinates":[[[-76.978,-12.017],[-76.942,-12.017],[-76.913,-12.042],[-76.913,-12.077],[-76.942,-12.09],[-76.968,-12.088],[-76.978,-12.068],[-76.992,-12.05],[-76.978,-12.017]]]}},{"type":"Feature","properties":{"nombdist":"LOS OLIVOS"},"geometry":{"type":"Polygon","coordinates":[[[-77.095,-11.932],[-77.055,-11.932],[-77.055,-11.965],[-77.108,-11.965],[-77.108,-11.948],[-77.095,-11.932]]]}},{"type":"Feature","properties":{"nombdist":"SANTA ANITA"},"geometry":{"type":"Polygon","coordinates":[[[-76.992,-12.017],[-76.978,-12.017],[-76.978,-12.05],[-77.003,-12.05],[-77.003,-12.033],[-76.992,-12.017]]]}},{"type":"Feature","properties":{"nombdist":"LA VICTORIA"},"geometry":{"type":"Polygon","coordinates":[[[-77.037,-12.055],[-77.018,-12.055],[-77.003,-12.06],[-77.003,-12.077],[-77.018,-12.082],[-77.03,-12.082],[-77.037,-12.082],[-77.037,-12.055]]]}},{"type":"Feature","properties":{"nombdist":"BREÑA"},"geometry":{"type":"Polygon","coordinates":[[[-77.055,-12.055],[-77.05,-12.055],[-77.037,-12.058],[-77.037,-12.068],[-77.05,-12.068],[-77.062,-12.068],[-77.062,-12.06],[-77.055,-12.055]]]}},{"type":"Feature","properties":{"nombdist":"LIMA"},"geometry":{"type":"Polygon","coordinates":[[[-77.078,-12.033],[-77.037,-12.033],[-77.03,-12.042],[-77.03,-12.055],[-77.037,-12.058],[-77.062,-12.06],[-77.078,-12.055],[-77.078,-12.033]]]}},{"type":"Feature","properties":{"nombdist":"RIMAC"},"geometry":{"type":"Polygon","coordinates":[[[-77.055,-12.0],[-77.03,-12.0],[-77.018,-12.017],[-77.018,-12.033],[-77.037,-12.033],[-77.055,-12.033],[-77.062,-12.025],[-77.055,-12.0]]]}},{"type":"Feature","properties":{"nombdist":"EL AGUSTINO"},"geometry":{"type":"Polygon","coordinates":[[[-77.018,-12.017],[-76.992,-12.017],[-76.978,-12.033],[-76.992,-12.05],[-77.003,-12.05],[-77.018,-12.042],[-77.018,-12.017]]]}},{"type":"Feature","properties":{"nombdist":"SAN JUAN DE MIRAFLORES"},"geometry":{"type":"Polygon","coordinates":[[[-77.0,-12.155],[-76.978,-12.155],[-76.965,-12.168],[-76.965,-12.193],[-76.978,-12.201],[-77.0,-12.193],[-77.018,-12.21],[-77.0,-12.155]]]}},{"type":"Feature","properties":{"nombdist":"SAN JUAN DE LURIGANCHO"},"geometry":{"type":"Polygon","coordinates":[[[-77.03,-11.932],[-76.978,-11.932],[-76.942,-11.965],[-76.928,-12.017],[-76.978,-12.017],[-77.018,-12.017],[-77.03,-12.017],[-77.055,-12.0],[-77.055,-11.948],[-77.03,-11.932]]]}},{"type":"Feature","properties":{"nombdist":"SAN MARTIN DE PORRES"},"geometry":{"type":"Polygon","coordinates":[[[-77.108,-11.965],[-77.055,-11.965],[-77.055,-12.0],[-77.062,-12.025],[-77.078,-12.033],[-77.095,-12.017],[-77.108,-12.003],[-77.108,-11.965]]]}},{"type":"Feature","properties":{"nombdist":"INDEPENDENCIA"},"geometry":{"type":"Polygon","coordinates":[[[-77.055,-11.965],[-77.03,-11.965],[-77.03,-12.0],[-77.055,-12.0],[-77.055,-11.965]]]}},{"type":"Feature","properties":{"nombdist":"COMAS"},"geometry":{"type":"Polygon","coordinates":[[[-77.095,-11.875],[-77.055,-11.875],[-77.055,-11.932],[-77.095,-11.932],[-77.108,-11.913],[-77.095,-11.875]]]}},{"type":"Feature","properties":{"nombdist":"CARABAYLLO"},"geometry":{"type":"Polygon","coordinates":[[[-77.055,-11.775],[-76.992,-11.775],[-76.965,-11.84],[-77.018,-11.892],[-77.055,-11.875],[-77.055,-11.775]]]}},{"type":"Feature","properties":{"nombdist":"PUENTE PIEDRA"},"geometry":{"type":"Polygon","coordinates":[[[-77.108,-11.807],[-77.055,-11.807],[-77.055,-11.875],[-77.108,-11.875],[-77.152,-11.84],[-77.108,-11.807]]]}},{"type":"Feature","properties":{"nombdist":"VILLA MARIA DEL TRIUNFO"},"geometry":{"type":"Polygon","coordinates":[[[-76.965,-12.168],[-76.942,-12.168],[-76.913,-12.193],[-76.913,-12.228],[-76.942,-12.228],[-76.965,-12.21],[-76.978,-12.201],[-76.965,-12.193],[-76.965,-12.168]]]}},{"type":"Feature","properties":{"nombdist":"VILLA EL SALVADOR"},"geometry":{"type":"Polygon","coordinates":[[[-76.965,-12.193],[-76.942,-12.228],[-76.942,-12.262],[-76.965,-12.262],[-76.978,-12.237],[-76.978,-12.201],[-76.965,-12.193]]]}},{"type":"Feature","properties":{"nombdist":"LURIN"},"geometry":{"type":"Polygon","coordinates":[[[-76.942,-12.262],[-76.913,-12.262],[-76.883,-12.28],[-76.883,-12.313],[-76.913,-12.313],[-76.942,-12.297],[-76.942,-12.262]]]}},{"type":"Feature","properties":{"nombdist":"CALLAO"},"geometry":{"type":"Polygon","coordinates":[[[-77.152,-12.017],[-77.095,-12.017],[-77.078,-12.033],[-77.078,-12.055],[-77.095,-12.06],[-77.108,-12.05],[-77.152,-12.042],[-77.152,-12.017]]]}},{"type":"Feature","properties":{"nombdist":"BELLAVISTA"},"geometry":{"type":"Polygon","coordinates":[[[-77.108,-12.05],[-77.095,-12.06],[-77.095,-12.077],[-77.108,-12.082],[-77.122,-12.068],[-77.122,-12.06],[-77.108,-12.05]]]}},{"type":"Feature","properties":{"nombdist":"LA PERLA"},"geometry":{"type":"Polygon","coordinates":[[[-77.095,-12.077],[-77.095,-12.09],[-77.108,-12.09],[-77.122,-12.082],[-77.122,-12.068],[-77.108,-12.082],[-77.095,-12.077]]]}},{"type":"Feature","properties":{"nombdist":"PACHACAMAC"},"geometry":{"type":"Polygon","coordinates":[[[-76.913,-12.228],[-76.883,-12.228],[-76.856,-12.245],[-76.856,-12.28],[-76.883,-12.28],[-76.913,-12.262],[-76.942,-12.262],[-76.942,-12.228],[-76.913,-12.228]]]}},{"type":"Feature","properties":{"nombdist":"VENTANILLA"},"geometry":{"type":"Polygon","coordinates":[[[-77.2,-11.84],[-77.152,-11.84],[-77.108,-11.807],[-77.055,-11.807],[-77.055,-11.84],[-77.152,-11.875],[-77.2,-11.875],[-77.2,-11.84]]]}},{"type":"Feature","properties":{"nombdist":"LURIGANCHO"},"geometry":{"type":"Polygon","coordinates":[[[-76.925,-11.932],[-76.883,-11.932],[-76.856,-11.965],[-76.883,-12.017],[-76.913,-12.017],[-76.925,-11.932]]]}},{"type":"Feature","properties":{"nombdist":"CHACLACAYO"},"geometry":{"type":"Polygon","coordinates":[[[-76.913,-12.017],[-76.883,-12.017],[-76.883,-12.042],[-76.913,-12.042],[-76.925,-12.033],[-76.913,-12.017]]]}}]};
+
+const MALLS=[
+  {n:"Jockey Plaza",lat:-12.0877,lng:-76.9750},{n:"Megaplaza Norte",lat:-11.9769,lng:-77.0760},
+  {n:"Plaza San Miguel",lat:-12.0779,lng:-77.0870},{n:"Real Plaza Primavera",lat:-12.0855,lng:-77.0049},
+  {n:"Mall Aventura S.A.",lat:-12.0434,lng:-76.9622},{n:"La Rambla Brasil",lat:-12.0774,lng:-77.0540},
+  {n:"La Rambla San Borja",lat:-12.1049,lng:-77.0069},{n:"Larcomar",lat:-12.1313,lng:-77.0324},
+  {n:"Open Plaza Angamos",lat:-12.1173,lng:-77.0044},{n:"Real Plaza Salaverry",lat:-12.0716,lng:-77.0503},
+  {n:"Mall del Sur",lat:-12.2018,lng:-76.9552},{n:"Plaza Lima Sur",lat:-12.2065,lng:-76.9481},
+];
+const NSE_AB=[{lat:-12.1219,lng:-77.0282},{lat:-12.0975,lng:-77.0356},{lat:-12.1512,lng:-76.9933},{lat:-12.1041,lng:-77.0003},{lat:-12.0812,lng:-76.9299}];
+const DEMO=[{"id":1,"lat":-12.1219,"lng":-77.0282,"tipo":"banderola","nombre":"BAN-001-MIR","proveedor":"JCDecaux","precio":2800,"ancho":8,"alto":3,"caras":2,"iluminacion":"LED","orientacion":"Sur"},{"id":2,"lat":-12.0975,"lng":-77.0356,"tipo":"unicolor","nombre":"UNI-002-ISO","proveedor":"Clear Channel","precio":3500,"ancho":6,"alto":3,"caras":1,"iluminacion":"Backlight","orientacion":"Este"},{"id":3,"lat":-12.0877,"lng":-76.975,"tipo":"panel","nombre":"PAN-003-JOC","proveedor":"JCDecaux","precio":4500,"ancho":12,"alto":4,"caras":2,"iluminacion":"LED","orientacion":"Oeste"},{"id":4,"lat":-11.9769,"lng":-77.076,"tipo":"minipalrew","nombre":"MPW-004-MEG","proveedor":"Vía Pública","precio":1200,"ancho":3,"alto":2,"caras":1,"iluminacion":"Sin iluminación","orientacion":"Sur"},{"id":5,"lat":-12.0779,"lng":-77.087,"tipo":"banderola","nombre":"BAN-005-SMI","proveedor":"MediaCom","precio":2200,"ancho":8,"alto":3,"caras":2,"iluminacion":"Frontal","orientacion":"Este"},{"id":6,"lat":-12.1041,"lng":-77.0003,"tipo":"unicolor","nombre":"UNI-006-SBJ","proveedor":"Clear Channel","precio":3000,"ancho":6,"alto":3,"caras":1,"iluminacion":"LED","orientacion":"Norte"},{"id":7,"lat":-12.0566,"lng":-77.1189,"tipo":"panel","nombre":"PAN-007-CAL","proveedor":"JCDecaux","precio":2600,"ancho":10,"alto":4,"caras":2,"iluminacion":"Backlight","orientacion":"Sur"},{"id":8,"lat":-12.1757,"lng":-77.0188,"tipo":"minipalrew","nombre":"MPW-008-CHO","proveedor":"Vía Pública","precio":900,"ancho":3,"alto":2,"caras":1,"iluminacion":"Sin iluminación","orientacion":"Norte"},{"id":9,"lat":-12.0464,"lng":-77.0428,"tipo":"banderola","nombre":"BAN-009-LIM","proveedor":"MediaCom","precio":1800,"ancho":8,"alto":3,"caras":1,"iluminacion":"Frontal","orientacion":"Oeste"},{"id":10,"lat":-12.0852,"lng":-77.0366,"tipo":"unicolor","nombre":"UNI-010-LIN","proveedor":"Clear Channel","precio":2100,"ancho":6,"alto":3,"caras":1,"iluminacion":"LED","orientacion":"Sur"},{"id":11,"lat":-12.1453,"lng":-77.0225,"tipo":"panel","nombre":"PAN-011-BAR","proveedor":"JCDecaux","precio":3200,"ancho":12,"alto":4,"caras":2,"iluminacion":"LED","orientacion":"Norte"},{"id":12,"lat":-12.0716,"lng":-77.0503,"tipo":"minipalrew","nombre":"MPW-012-JM","proveedor":"Vía Pública","precio":1100,"ancho":3,"alto":2,"caras":1,"iluminacion":"Sin iluminación","orientacion":"Este"},{"id":13,"lat":-12.0748,"lng":-77.0635,"tipo":"banderola","nombre":"BAN-013-PL","proveedor":"MediaCom","precio":1900,"ancho":8,"alto":3,"caras":2,"iluminacion":"Frontal","orientacion":"Sur"},{"id":14,"lat":-11.9982,"lng":-77.0742,"tipo":"unicolor","nombre":"UNI-014-OLI","proveedor":"Clear Channel","precio":2400,"ancho":6,"alto":3,"caras":1,"iluminacion":"Backlight","orientacion":"Norte"},{"id":15,"lat":-12.0269,"lng":-76.9181,"tipo":"panel","nombre":"PAN-015-ATE","proveedor":"JCDecaux","precio":2000,"ancho":10,"alto":4,"caras":2,"iluminacion":"LED","orientacion":"Oeste"},{"id":16,"lat":-12.2197,"lng":-76.9437,"tipo":"minipalrew","nombre":"MPW-016-VES","proveedor":"Vía Pública","precio":800,"ancho":3,"alto":2,"caras":1,"iluminacion":"Sin iluminación","orientacion":"Sur"},{"id":17,"lat":-12.0135,"lng":-77.0768,"tipo":"banderola","nombre":"BAN-017-SMP","proveedor":"MediaCom","precio":1600,"ancho":8,"alto":3,"caras":1,"iluminacion":"Frontal","orientacion":"Este"},{"id":18,"lat":-11.9367,"lng":-77.0538,"tipo":"unicolor","nombre":"UNI-018-COM","proveedor":"Clear Channel","precio":1800,"ancho":6,"alto":3,"caras":1,"iluminacion":"Backlight","orientacion":"Norte"},{"id":19,"lat":-12.0654,"lng":-77.0148,"tipo":"panel","nombre":"PAN-019-LAV","proveedor":"JCDecaux","precio":2300,"ancho":12,"alto":4,"caras":2,"iluminacion":"LED","orientacion":"Oeste"},{"id":20,"lat":-12.1313,"lng":-77.0324,"tipo":"banderola","nombre":"BAN-020-LAR","proveedor":"MediaCom","precio":3800,"ancho":8,"alto":3,"caras":2,"iluminacion":"LED","orientacion":"Sur"}];
+
+// ── STATE ─────────────────────────────────────────────────────────────────
+var map=null, oohList=[], nextId=100, adding=false, selId=null, geoData=null;
+var activeNSE=new Set(["A","B1","B2","C1","C2","D","E"]);
+var vis={dist:true,mall:true,traf:true,ooh:true};
+var mallMarkers=[], oohMapMarkers=[];
+var mapLoaded=false;
+
+// ── HELPERS ───────────────────────────────────────────────────────────────
+function dd(a,b){return Math.sqrt((a.lat-b.lat)**2+(a.lng-b.lng)**2);}
+function calcScore(lat,lng,tipo,ancho,alto,caras,ilum){
+  var n=Math.max(0,38-Math.min.apply(null,NSE_AB.map(function(z){return dd({lat:lat,lng:lng},z)}))*620);
+  var m=Math.max(0,30-Math.min.apply(null,MALLS.map(function(x){return dd({lat:lat,lng:lng},{lat:x.lat,lng:x.lng})}))*460);
+  var t={panel:10,unicolor:8,banderola:7,minipalrew:5,otro:3}[tipo]||5;
+  var dim=Math.min(8,((ancho||6)*(alto||3))/8);
+  var car=(caras||1)>1?4:0;
+  var il={LED:5,Backlight:4,Frontal:3,"Sin iluminación":0}[ilum]||0;
+  return Math.min(100,Math.round(n+m+t+dim+car+il));
+}
+function sc(s){return s>=70?"#00ff88":s>=50?"#ffcc00":"#ff6b35";}
+function scLabel(s){return s>=70?"✅ RECOMENDADO":s>=50?"⚠️ EVALUAR":"❌ BAJA PRIOR.";}
+function getNSE(props){
+  var name=((props.nombdist||props.NOMBDIST||props.nombre||props.DISTRITO||"")+"").toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+  for(var k in NSE_MAP){
+    var kn=k.normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+    if(name===kn||name.includes(kn)||kn.includes(name)) return NSE_MAP[k];
+  }
+  return "D";
+}
+
+// ── INIT MAP ──────────────────────────────────────────────────────────────
+function initMap(){
+  mapboxgl.accessToken = MBTOKEN;
+  map = new mapboxgl.Map({
+    container:'map',
+    style:'mapbox://styles/mapbox/dark-v11',
+    center:[-77.03,-12.05],
+    zoom:11,
+    attributionControl:false
+  });
+  map.addControl(new mapboxgl.NavigationControl(),'bottom-right');
+
+  map.on('load', function(){
+    mapLoaded = true;
+    document.getElementById('loading').classList.add('hide');
+    document.getElementById('hdrsub').textContent='MAPBOX GL · TRAFFIC V1 REAL · APEIM 2023';
+
+    // Tráfico sobre red vial real Mapbox
+    addTraficoMapbox();
+
+    // Distritos NSE
+    loadINEI();
+
+    // Malls
+    addMalls();
+
+    // OOH demo
+    DEMO.forEach(function(e){
+      oohList.push(Object.assign({},e,{score:calcScore(e.lat,e.lng,e.tipo,e.ancho,e.alto,e.caras,e.iluminacion)}));
+    });
+    renderOOH();
+    updateUI();
+  });
+
+  map.on('click', function(e){
+    if(!adding) return;
+    document.getElementById('fLat').value=e.lngLat.lat.toFixed(5);
+    document.getElementById('fLng').value=e.lngLat.lng.toFixed(5);
+    toggleAdd(); showTab('elementos');
+    document.getElementById('fNom').focus();
+  });
+}
+
+// ── TRÁFICO REAL MAPBOX TRAFFIC V1 ────────────────────────────────────────
+// Tileset mapbox.mapbox-traffic-v1: datos reales de velocidad por segmento.
+// congestion field: "low" | "moderate" | "heavy" | "severe"
+function addTraficoMapbox(){
+  // Source: Mapbox Traffic v1 (tileset vectorial con datos reales)
+  map.addSource('mapbox-traffic', {
+    type: 'vector',
+    url: 'mapbox://mapbox.mapbox-traffic-v1'
+  });
+
+  // Capa: congestión severa → rojo intenso
+  map.addLayer({
+    id: 'traf-severe',
+    type: 'line',
+    source: 'mapbox-traffic',
+    'source-layer': 'traffic',
+    filter: ['==', 'congestion', 'severe'],
+    paint: {
+      'line-color': '#ff1a1a',
+      'line-width': ['interpolate',['linear'],['zoom'], 7,1.5, 11,3.5, 14,6],
+      'line-opacity': 0.92
+    }
+  }, 'road-label');
+
+  // Capa: congestión alta → rojo-naranja
+  map.addLayer({
+    id: 'traf-heavy',
+    type: 'line',
+    source: 'mapbox-traffic',
+    'source-layer': 'traffic',
+    filter: ['==', 'congestion', 'heavy'],
+    paint: {
+      'line-color': '#ff6600',
+      'line-width': ['interpolate',['linear'],['zoom'], 7,1.5, 11,3, 14,5],
+      'line-opacity': 0.88
+    }
+  }, 'road-label');
+
+  // Capa: congestión moderada → amarillo
+  map.addLayer({
+    id: 'traf-moderate',
+    type: 'line',
+    source: 'mapbox-traffic',
+    'source-layer': 'traffic',
+    filter: ['==', 'congestion', 'moderate'],
+    paint: {
+      'line-color': '#ffcc00',
+      'line-width': ['interpolate',['linear'],['zoom'], 7,1, 11,2.5, 14,4],
+      'line-opacity': 0.82
+    }
+  }, 'road-label');
+
+  // Capa: tráfico fluido → verde
+  map.addLayer({
+    id: 'traf-low',
+    type: 'line',
+    source: 'mapbox-traffic',
+    'source-layer': 'traffic',
+    filter: ['==', 'congestion', 'low'],
+    paint: {
+      'line-color': '#00cc44',
+      'line-width': ['interpolate',['linear'],['zoom'], 7,0.8, 11,2, 14,3],
+      'line-opacity': 0.75
+    }
+  }, 'road-label');
+}
+
+// ── DISTRITOS NSE ─────────────────────────────────────────────────────────
+function loadINEI(){
+  var base="https://geoespacial.inei.gob.pe/geoserver/Interoperabilidad/ows";
+  var params="service=WFS&version=1.0.0&request=GetFeature&typeName=Interoperabilidad:ig_distrito&outputFormat=application/json&srsName=EPSG:4326";
+  var qLima=base+"?"+params+"&CQL_FILTER=nombdep=%27LIMA%27";
+  var qCallao=base+"?"+params+"&CQL_FILTER=nombdep=%27CALLAO%27";
+  var proxies=["","https://corsproxy.io/?","https://api.allorigins.win/raw?url="];
+  function tryFetch(pi){
+    if(pi>=proxies.length){ useFallback(); return; }
+    var p=proxies[pi];
+    var uL=p?p+encodeURIComponent(qLima):qLima;
+    var uC=p?p+encodeURIComponent(qCallao):qCallao;
+    Promise.all([
+      fetch(uL).then(function(r){if(!r.ok)throw r.status;return r.json();}),
+      fetch(uC).then(function(r){if(!r.ok)throw r.status;return r.json();})
+    ]).then(function(res){
+      geoData={type:"FeatureCollection",features:res[0].features.concat(res[1].features)};
+      renderDistritos(geoData);
+      document.getElementById('sDist').textContent=geoData.features.length;
+      document.getElementById('hdrsub').textContent='MAPBOX GL · INEI WFS · '+geoData.features.length+' DISTRITOS'+(p?' (proxy)':'');
+    }).catch(function(){ tryFetch(pi+1); });
+  }
+  tryFetch(0);
+}
+
+function useFallback(){
+  geoData=FALLBACK_GEO;
+  renderDistritos(geoData);
+  document.getElementById('sDist').textContent=FALLBACK_GEO.features.length;
+}
+
+function renderDistritos(geojson){
+  // Quitar capas/source anteriores
+  ['dist-fill','dist-line'].forEach(function(id){if(map.getLayer(id))map.removeLayer(id);});
+  if(map.getSource('distritos'))map.removeSource('distritos');
+
+  var filtered={type:"FeatureCollection",features:geojson.features.filter(function(f){
+    return activeNSE.has(getNSE(f.properties));
+  })};
+  // Añadir color NSE a cada feature
+  filtered.features.forEach(function(f){
+    f.properties._nse=getNSE(f.properties);
+    f.properties._color=NC[f.properties._nse]||'#888';
+  });
+
+  map.addSource('distritos',{type:'geojson',data:filtered});
+  map.addLayer({
+    id:'dist-fill', type:'fill', source:'distritos',
+    paint:{'fill-color':['get','_color'],'fill-opacity':0.20}
+  });
+  map.addLayer({
+    id:'dist-line', type:'line', source:'distritos',
+    paint:{'line-color':['get','_color'],'line-width':1.2,'line-opacity':0.8}
+  });
+
+  // Tooltip distritos
+  map.off('mousemove','dist-fill');
+  var popup=new mapboxgl.Popup({closeButton:false,closeOnClick:false});
+  map.on('mousemove','dist-fill',function(e){
+    map.getCanvas().style.cursor='pointer';
+    var props=e.features[0].properties;
+    var name=props.nombdist||props.NOMBDIST||'';
+    var nse=props._nse||'D';
+    popup.setLngLat(e.lngLat)
+      .setHTML('<b style="font-family:Courier New,monospace">'+name+'</b><br><span style="color:'+NC[nse]+';font-size:9px">NSE '+nse+'</span>')
+      .addTo(map);
+  });
+  map.on('mouseleave','dist-fill',function(){
+    map.getCanvas().style.cursor='';
+    popup.remove();
+  });
+}
+
+// ── MALLS ─────────────────────────────────────────────────────────────────
+function addMalls(){
+  mallMarkers.forEach(function(m){m.remove();});
+  mallMarkers=[];
+  if(!vis.mall) return;
+  MALLS.forEach(function(m){
+    var el=document.createElement('div');
+    el.style.cssText='width:22px;height:22px;background:#00e5ff22;border:1.5px solid #00e5ff;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:13px;box-shadow:0 0 8px #00e5ff44;cursor:pointer';
+    el.textContent='🛍';
+    var popup=new mapboxgl.Popup({offset:12,className:''}).setHTML(
+      '<div class="ptipo" style="background:#00e5ff">C. COMERCIAL</div><div class="pname">🛍 '+m.n+'</div>'
+    );
+    var mk=new mapboxgl.Marker({element:el}).setLngLat([m.lng,m.lat]).setPopup(popup).addTo(map);
+    mallMarkers.push(mk);
+  });
+}
+
+// ── OOH MARKERS ───────────────────────────────────────────────────────────
+function renderOOH(){
+  oohMapMarkers.forEach(function(m){m.remove();});
+  oohMapMarkers=[];
+  if(!vis.ooh) return;
+  oohList.forEach(function(e){
+    var c=sc(e.score), sel=selId===e.id, r=sel?28:22;
+    var el=document.createElement('div');
+    el.style.cssText='width:'+r+'px;height:'+r+'px;border-radius:50%;background:'+c+'33;border:2px solid '+c+';display:flex;align-items:center;justify-content:center;font-size:'+(sel?13:11)+'px;box-shadow:0 0 '+(sel?14:6)+'px '+c+'88;cursor:pointer';
+    el.textContent=TI[e.tipo];
+    el.onclick=function(ev){ev.stopPropagation();selId=e.id;renderOOH();showTab('elementos');renderOOHList();};
+    var popup=new mapboxgl.Popup({offset:14}).setHTML(
+      '<div class="ptipo" style="background:'+c+'">'+e.tipo.toUpperCase()+'</div>'+
+      '<div class="pname">'+e.nombre+'</div>'+
+      '<div class="pmeta">🏢 '+e.proveedor+'</div>'+
+      '<div class="pmeta">💰 S/. '+e.precio+'/mes</div>'+
+      '<div class="pmeta">📐 '+(e.ancho||'—')+'m × '+(e.alto||'—')+'m · '+(e.caras||1)+' cara(s) · '+(e.iluminacion||'—')+' · '+(e.orientacion||'—')+'</div>'+
+      '<div class="pmeta">📍 '+e.lat.toFixed(4)+', '+e.lng.toFixed(4)+'</div>'+
+      '<div class="pscore" style="color:'+c+'">'+e.score+'</div>'+
+      '<div class="pscl">SCORE ESTRATÉGICO / 100</div>'
+    );
+    var mk=new mapboxgl.Marker({element:el}).setLngLat([e.lng,e.lat]).setPopup(popup).addTo(map);
+    oohMapMarkers.push(mk);
+  });
+}
+
+// ── TOGGLES ───────────────────────────────────────────────────────────────
+function togL(k){
+  vis[k]=!vis[k];
+  document.getElementById('t-'+k).classList.toggle('on',vis[k]);
+  document.getElementById('lr-'+k).classList.toggle('on',vis[k]);
+  if(!mapLoaded) return;
+  if(k==='dist'){
+    ['dist-fill','dist-line'].forEach(function(id){
+      if(map.getLayer(id)) map.setLayoutProperty(id,'visibility',vis[k]?'visible':'none');
+    });
+  }
+  if(k==='traf'){
+    ['traf-severe','traf-heavy','traf-moderate','traf-low'].forEach(function(id){
+      if(map.getLayer(id)) map.setLayoutProperty(id,'visibility',vis[k]?'visible':'none');
+    });
+  }
+  if(k==='mall'){ addMalls(); }
+  if(k==='ooh'){ renderOOH(); }
+}
+function togNSE(nse,el){
+  activeNSE.has(nse)?activeNSE.delete(nse):activeNSE.add(nse);
+  el.classList.toggle('off',!activeNSE.has(nse));
+  if(geoData) renderDistritos(geoData);
+}
+
+// ── OOH CRUD ──────────────────────────────────────────────────────────────
+function saveOOH(){
+  var lat=parseFloat(document.getElementById('fLat').value);
+  var lng=parseFloat(document.getElementById('fLng').value);
+  if(isNaN(lat)||isNaN(lng)) return alert('Coordenadas inválidas');
+  var tipo=document.getElementById('fTipo').value;
+  var ancho=parseFloat(document.getElementById('fAncho').value)||6;
+  var alto=parseFloat(document.getElementById('fAlto').value)||3;
+  var caras=parseInt(document.getElementById('fCaras').value)||1;
+  var ilum=document.getElementById('fIlum').value;
+  var ori=document.getElementById('fOri').value;
+  var e={id:nextId++,lat:lat,lng:lng,tipo:tipo,
+    nombre:document.getElementById('fNom').value||'OOH-'+nextId,
+    proveedor:document.getElementById('fProv').value||'—',
+    precio:parseFloat(document.getElementById('fPrecio').value)||0,
+    ancho:ancho,alto:alto,caras:caras,iluminacion:ilum,orientacion:ori,
+    score:calcScore(lat,lng,tipo,ancho,alto,caras,ilum)};
+  oohList.push(e);
+  ['fNom','fProv','fPrecio','fAncho','fAlto','fLat','fLng'].forEach(function(id){document.getElementById(id).value='';});
+  renderOOH(); map.flyTo({center:[lng,lat],zoom:15}); updateUI();
+}
+function toggleAdd(){
+  adding=!adding;
+  var btn=document.getElementById('addBtn');
+  document.getElementById('banner').style.display=adding?'block':'none';
+  if(adding){btn.className='btn bx';btn.textContent='✕ CANCELAR';map.getCanvas().style.cursor='crosshair';}
+  else{btn.className='btn ba';btn.textContent='+ ELEMENTO';map.getCanvas().style.cursor='';}
+}
+function importCSV(inp){
+  var file=inp.files[0];if(!file)return;
+  var r=new FileReader();
+  r.onload=function(ev){
+    var lines=ev.target.result.split('\n').filter(function(l){return l.trim();});
+    var n=0;
+    lines.forEach(function(line,i){
+      if(i===0&&line.toLowerCase().includes('lat'))return;
+      var c=line.split(',').map(function(x){return x.trim().replace(/"/g,'');});
+      var lat=parseFloat(c[0]),lng=parseFloat(c[1]);
+      if(isNaN(lat)||isNaN(lng))return;
+      var tipo=c[2]||'otro',ancho=parseFloat(c[6])||6,alto=parseFloat(c[7])||3,caras=parseInt(c[8])||1,ilum=c[9]||'Sin iluminación';
+      oohList.push({id:nextId++,lat:lat,lng:lng,tipo:tipo,nombre:c[3]||'IMP-'+i,proveedor:c[4]||'—',precio:parseFloat(c[5])||0,ancho:ancho,alto:alto,caras:caras,iluminacion:ilum,orientacion:c[10]||'Norte',score:calcScore(lat,lng,tipo,ancho,alto,caras,ilum)});
+      n++;
+    });
+    renderOOH();updateUI();alert('✅ '+n+' elementos importados');
+  };
+  r.readAsText(file);
+}
+function exportCSV(){
+  var rows=['nombre,tipo,proveedor,lat,lng,precio,ancho,alto,caras,iluminacion,orientacion,score'].concat(
+    oohList.map(function(e){return[e.nombre,e.tipo,e.proveedor,e.lat,e.lng,e.precio,e.ancho||'',e.alto||'',e.caras||1,e.iluminacion||'',e.orientacion||'',e.score].join(',');})).join('\n');
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([rows],{type:'text/csv'}));
+  a.download='ooh-lima.csv';a.click();
+}
+
+// ── UI ─────────────────────────────────────────────────────────────────────
+function buildUI(){
+  var g=document.getElementById('nseGrid');
+  Object.entries(NC).forEach(function(e){
+    var nse=e[0],col=e[1],d=document.createElement('div');
+    d.className='nc';d.textContent='NSE '+nse;
+    d.style.background=col+'44';d.style.color=col;d.style.borderColor=col;
+    d.onclick=function(){togNSE(nse,d);};
+    g.appendChild(d);
+  });
+  var leg=document.getElementById('nseLeg');
+  Object.entries(NC).forEach(function(e){
+    var nse=e[0],col=e[1];
+    leg.innerHTML+='<div class="legrow"><div class="legsq" style="background:'+col+'55;border:1px solid '+col+'"></div><span style="font-size:8px;font-weight:700;color:'+col+'">NSE '+nse+' </span><span style="font-size:7px;color:#445">'+NL[nse]+'</span></div>';
+  });
+}
+function showTab(t){
+  ['capas','elementos','analisis'].forEach(function(tab,i){
+    document.getElementById('p-'+tab).style.display=tab===t?'block':'none';
+    document.querySelectorAll('.tab')[i].classList.toggle('on',tab===t);
+  });
+  if(t==='analisis')renderAnalysis();
+  if(t==='elementos')renderOOHList();
+}
+function updateUI(){
+  var n=oohList.length;
+  document.getElementById('oohDesc').textContent=n+' elementos';
+  document.getElementById('oohCnt').textContent=n;
+  document.getElementById('sTot').textContent=n;
+  var avg=n?Math.round(oohList.reduce(function(s,e){return s+e.score;},0)/n):0;
+  document.getElementById('sAvg').textContent=avg||'—';
+  renderOOHList();
+}
+function renderOOHList(){
+  document.getElementById('oohList').innerHTML=oohList.map(function(e){
+    return'<div class="oi'+(selId===e.id?' sel':'')+'" style="border-left-color:'+sc(e.score)+'" onclick="selOOH('+e.id+')"><div><div class="on2">'+e.nombre+'</div><div class="om">'+TI[e.tipo]+' '+e.tipo+' · '+e.proveedor+' · S/.'+e.precio+'</div><div class="om">'+(e.ancho||'?')+'m×'+(e.alto||'?')+'m · '+(e.caras||1)+'c · '+(e.iluminacion||'—')+' · '+(e.orientacion||'—')+'</div></div><div class="osc" style="color:'+sc(e.score)+'">'+e.score+'</div></div>';
+  }).join('');
+}
+function selOOH(id){
+  selId=id;
+  var e=oohList.find(function(x){return x.id===id;});
+  if(e&&map) map.flyTo({center:[e.lng,e.lat],zoom:15});
+  renderOOH();renderOOHList();
+}
+function renderAnalysis(){
+  var s=[].concat(oohList).sort(function(a,b){return b.score-a.score;});
+  document.getElementById('top5').innerHTML=s.slice(0,5).map(function(e,i){
+    var c=sc(e.score);
+    return'<div class="rc" style="border-left-color:'+c+'"><div style="display:flex;justify-content:space-between;align-items:center"><div style="font-size:9px;font-weight:700">#'+(i+1)+' '+e.nombre+'</div><div style="background:'+c+';color:#000;padding:2px 7px;border-radius:2px;font-size:8px;font-weight:700">'+e.score+'</div></div><div style="font-size:7px;color:#445;margin:2px 0">'+TI[e.tipo]+' '+e.tipo+' · '+e.proveedor+' · S/.'+e.precio+'/mes</div><div style="font-size:7px;color:#556">'+(e.ancho||'?')+'m×'+(e.alto||'?')+'m · '+(e.caras||1)+' cara(s) · '+(e.iluminacion||'—')+'</div><div style="font-size:9px;font-weight:700;color:'+c+';margin-top:3px">'+scLabel(e.score)+'</div></div>';
+  }).join('');
+  document.getElementById('scoreD').innerHTML=s.map(function(e){
+    var c=sc(e.score);
+    var np=Math.min(100,Math.max(0,Math.round(100-Math.min.apply(null,NSE_AB.map(function(z){return dd({lat:e.lat,lng:e.lng},z);}))*1500)));
+    var mp=Math.min(100,Math.max(0,Math.round(100-Math.min.apply(null,MALLS.map(function(m){return dd({lat:e.lat,lng:e.lng},{lat:m.lat,lng:m.lng});}))*950)));
+    var dp=Math.min(100,Math.round(((e.ancho||6)*(e.alto||3))/48*100));
+    var ip={LED:100,Backlight:80,Frontal:60,'Sin iluminación':20}[e.iluminacion]||20;
+    var bars=[['NSE A/B',np,'#e74c3c'],['C.Comercial',mp,'#00e5ff'],['Dimensión',dp,'#a259ff'],['Iluminación',ip,'#ffcc00']];
+    return'<div class="rc" style="border-left-color:'+c+'"><div style="display:flex;justify-content:space-between;margin-bottom:6px"><div style="font-size:9px;font-weight:700">'+e.nombre+'</div><div style="background:'+c+';color:#000;padding:1px 6px;border-radius:2px;font-size:7px;font-weight:700">'+e.score+'/100</div></div>'+bars.map(function(b){return'<div class="sbr"><div class="sbl">'+b[0]+'</div><div class="sbt"><div class="sbf" style="width:'+b[1]+'%;background:'+b[2]+'"></div></div><div class="sbv" style="color:'+b[2]+'">'+b[1]+'</div></div>';}).join('')+'</div>';
+  }).join('');
+}
+
+// ── BOOT: esperar que mapboxgl esté disponible ─────────────────────────────
+buildUI();
+var _mbTimeout = setTimeout(function(){
+  document.getElementById('loading').innerHTML =
+    '❌ No se pudo cargar Mapbox GL.<br><small style="font-size:8px;color:#556;letter-spacing:1px">Verifica conexión a internet.</small>';
+}, 10000);
+(function waitMapbox(){
+  if(typeof mapboxgl !== 'undefined'){
+    clearTimeout(_mbTimeout);
+    initMap();
+  } else {
+    setTimeout(waitMapbox, 100);
+  }
+})();
+</script>
+</body>
+</html>
