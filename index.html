@@ -220,7 +220,7 @@ function initMap(){
   mapboxgl.accessToken = MBTOKEN;
   map = new mapboxgl.Map({
     container:'map',
-    style:'mapbox://styles/mapbox/dark-v11',
+    style:'mapbox://styles/mapbox/traffic-night-v2',
     center:[-77.03,-12.05],
     zoom:11,
     attributionControl:false
@@ -232,8 +232,8 @@ function initMap(){
     document.getElementById('loading').classList.add('hide');
     document.getElementById('hdrsub').textContent='MAPBOX GL · TRAFFIC V1 REAL · APEIM 2023';
 
-    // Tráfico sobre red vial real Mapbox
-    addTraficoMapbox();
+    // Tráfico incluido nativamente en estilo traffic-night-v2
+    findTrafficLayers();
 
     // Distritos NSE
     loadINEI();
@@ -258,71 +258,16 @@ function initMap(){
   });
 }
 
-// ── TRÁFICO REAL MAPBOX TRAFFIC V1 ────────────────────────────────────────
-// Tileset mapbox.mapbox-traffic-v1: datos reales de velocidad por segmento.
-// congestion field: "low" | "moderate" | "heavy" | "severe"
-function addTraficoMapbox(){
-  // Source: Mapbox Traffic v1 (tileset vectorial con datos reales)
-  map.addSource('mapbox-traffic', {
-    type: 'vector',
-    url: 'mapbox://mapbox.mapbox-traffic-v1'
-  });
-
-  // Capa: congestión severa → rojo intenso
-  map.addLayer({
-    id: 'traf-severe',
-    type: 'line',
-    source: 'mapbox-traffic',
-    'source-layer': 'traffic',
-    filter: ['==', 'congestion', 'severe'],
-    paint: {
-      'line-color': '#ff1a1a',
-      'line-width': ['interpolate',['linear'],['zoom'], 7,1.5, 11,3.5, 14,6],
-      'line-opacity': 0.92
-    }
-  }, 'road-label');
-
-  // Capa: congestión alta → rojo-naranja
-  map.addLayer({
-    id: 'traf-heavy',
-    type: 'line',
-    source: 'mapbox-traffic',
-    'source-layer': 'traffic',
-    filter: ['==', 'congestion', 'heavy'],
-    paint: {
-      'line-color': '#ff6600',
-      'line-width': ['interpolate',['linear'],['zoom'], 7,1.5, 11,3, 14,5],
-      'line-opacity': 0.88
-    }
-  }, 'road-label');
-
-  // Capa: congestión moderada → amarillo
-  map.addLayer({
-    id: 'traf-moderate',
-    type: 'line',
-    source: 'mapbox-traffic',
-    'source-layer': 'traffic',
-    filter: ['==', 'congestion', 'moderate'],
-    paint: {
-      'line-color': '#ffcc00',
-      'line-width': ['interpolate',['linear'],['zoom'], 7,1, 11,2.5, 14,4],
-      'line-opacity': 0.82
-    }
-  }, 'road-label');
-
-  // Capa: tráfico fluido → verde
-  map.addLayer({
-    id: 'traf-low',
-    type: 'line',
-    source: 'mapbox-traffic',
-    'source-layer': 'traffic',
-    filter: ['==', 'congestion', 'low'],
-    paint: {
-      'line-color': '#00cc44',
-      'line-width': ['interpolate',['linear'],['zoom'], 7,0.8, 11,2, 14,3],
-      'line-opacity': 0.75
-    }
-  }, 'road-label');
+// ── TRÁFICO: integrado en estilo traffic-night-v2 ─────────────────────────
+// El estilo mapbox://styles/mapbox/traffic-night-v2 incluye tráfico real
+// en tiempo real nativamente. No requiere source ni layers adicionales.
+// Toggle: ocultamos/mostramos las capas de tráfico del propio estilo.
+var TRAFFIC_LAYERS=[];
+function findTrafficLayers(){
+  if(!map.getStyle()) return;
+  TRAFFIC_LAYERS=map.getStyle().layers
+    .filter(function(l){return l.id.indexOf('traffic')>-1;})
+    .map(function(l){return l.id;});
 }
 
 // ── DISTRITOS NSE ─────────────────────────────────────────────────────────
@@ -453,7 +398,8 @@ function togL(k){
     });
   }
   if(k==='traf'){
-    ['traf-severe','traf-heavy','traf-moderate','traf-low'].forEach(function(id){
+    if(!TRAFFIC_LAYERS.length) findTrafficLayers();
+    TRAFFIC_LAYERS.forEach(function(id){
       if(map.getLayer(id)) map.setLayoutProperty(id,'visibility',vis[k]?'visible':'none');
     });
   }
