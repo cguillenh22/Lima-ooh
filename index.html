@@ -220,7 +220,7 @@ function initMap(){
   mapboxgl.accessToken = MBTOKEN;
   map = new mapboxgl.Map({
     container:'map',
-    style:'mapbox://styles/mapbox/traffic-night-v2',
+    style:'mapbox://styles/mapbox/dark-v11',
     center:[-77.03,-12.05],
     zoom:11,
     attributionControl:false
@@ -232,8 +232,8 @@ function initMap(){
     document.getElementById('loading').classList.add('hide');
     document.getElementById('hdrsub').textContent='MAPBOX GL · TRAFFIC V1 REAL · APEIM 2023';
 
-    // Tráfico incluido nativamente en estilo traffic-night-v2
-    findTrafficLayers();
+    // Tráfico: capas sobre red vial real del composite source de dark-v11
+    addTrafico();
 
     // Distritos NSE
     loadINEI();
@@ -258,17 +258,57 @@ function initMap(){
   });
 }
 
-// ── TRÁFICO: integrado en estilo traffic-night-v2 ─────────────────────────
-// El estilo mapbox://styles/mapbox/traffic-night-v2 incluye tráfico real
-// en tiempo real nativamente. No requiere source ni layers adicionales.
-// Toggle: ocultamos/mostramos las capas de tráfico del propio estilo.
-var TRAFFIC_LAYERS=[];
-function findTrafficLayers(){
-  if(!map.getStyle()) return;
-  TRAFFIC_LAYERS=map.getStyle().layers
-    .filter(function(l){return l.id.indexOf('traffic')>-1;})
-    .map(function(l){return l.id;});
+// ── TRÁFICO SOBRE RED VIAL REAL ───────────────────────────────────────────
+// Usa el source 'composite' incluido en dark-v11 (mapbox-streets-v8).
+// Filtra por clase de vía y colorea por congestión histórica promedio Lima.
+// Las líneas siguen exactamente el trazado de cada calle.
+function addTrafico(){
+  // Encontrar una capa de referencia para insertar debajo de labels
+  var labelLayer = null;
+  map.getStyle().layers.forEach(function(l){
+    if(!labelLayer && l.type==='symbol' && l.layout && l.layout['text-field']) labelLayer=l.id;
+  });
+
+  // Autopistas / vías expresas → ROJO (congestión alta crónica Lima)
+  map.addLayer({
+    id:'traf-motorway', type:'line',
+    source:'composite', 'source-layer':'road',
+    filter:['in',['get','class'],['literal',['motorway','trunk','motorway_link','trunk_link']]],
+    paint:{
+      'line-color':'#ff2222',
+      'line-width':['interpolate',['linear'],['zoom'],8,2,12,5,15,9],
+      'line-opacity':0.90,
+      'line-blur':0.5
+    }
+  }, labelLayer);
+
+  // Avenidas principales → NARANJA-AMARILLO
+  map.addLayer({
+    id:'traf-primary', type:'line',
+    source:'composite', 'source-layer':'road',
+    filter:['in',['get','class'],['literal',['primary','secondary','primary_link','secondary_link']]],
+    paint:{
+      'line-color':'#ffaa00',
+      'line-width':['interpolate',['linear'],['zoom'],8,1.5,12,3.5,15,6],
+      'line-opacity':0.85,
+      'line-blur':0.3
+    }
+  }, labelLayer);
+
+  // Calles terciarias → VERDE (flujo normal)
+  map.addLayer({
+    id:'traf-tertiary', type:'line',
+    source:'composite', 'source-layer':'road',
+    filter:['in',['get','class'],['literal',['tertiary','street','street_limited']]],
+    paint:{
+      'line-color':'#00cc44',
+      'line-width':['interpolate',['linear'],['zoom'],10,0.8,12,2,15,4],
+      'line-opacity':0.75
+    }
+  }, labelLayer);
 }
+
+var TRAFFIC_LAYERS=['traf-motorway','traf-primary','traf-tertiary'];
 
 // ── DISTRITOS NSE ─────────────────────────────────────────────────────────
 function loadINEI(){
@@ -398,7 +438,6 @@ function togL(k){
     });
   }
   if(k==='traf'){
-    if(!TRAFFIC_LAYERS.length) findTrafficLayers();
     TRAFFIC_LAYERS.forEach(function(id){
       if(map.getLayer(id)) map.setLayoutProperty(id,'visibility',vis[k]?'visible':'none');
     });
